@@ -17,7 +17,10 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3' # Or your Flutter version
+          flutter-version: '3.24.3'
+
+      - name: Generate missing Flutter files
+        run: flutter create .
 
       - name: Install dependencies
         run: flutter pub get
