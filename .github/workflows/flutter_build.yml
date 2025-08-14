@@ -1,51 +1,32 @@
-name: Flutter Build
+name: Build Flutter APK
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.0"
+          flutter-version: '3.24.3' # Or your Flutter version
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Android APK
+      - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v3
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk
+          name: bmi-calculator-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.22.0"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build iOS IPA (Unsigned)
-        run: flutter build ios --release --no-codesign
-
-      - name: Upload iOS IPA folder
-        uses: actions/upload-artifact@v3
-        with:
-          name: ios-release
-          path: build/ios/iphoneos
