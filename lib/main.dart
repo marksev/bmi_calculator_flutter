@@ -69,12 +69,27 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            TextField(
-              controller: _heightController,
-              decoration: const InputDecoration(
-                labelText: "Height (cm)",
-                border: OutlineInputBorder(),
-              ),
+            Image.asset('assets/images/ronaldo.png'),
+            const SizedBox(height: 16),
+            Container(
+              color: Colors.grey[200],
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Height (cm)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _heightController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
