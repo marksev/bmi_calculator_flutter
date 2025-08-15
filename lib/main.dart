@@ -90,16 +90,29 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
                     keyboardType: TextInputType.number,
                   ),
                 ],
-              keyboardType: TextInputType.number,
+              ),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _weightController,
-              decoration: const InputDecoration(
-                labelText: "Weight (kg)",
-                border: OutlineInputBorder(),
+            Container(
+              color: Colors.grey[200],
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Weight (kg)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _weightController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
               ),
-              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -112,13 +125,16 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
                 children: [
                   Text(
                     "Your BMI: ${_bmi!.toStringAsFixed(1)}",
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     _category,
                     style: TextStyle(
                       fontSize: 20,
-                      color: _category == "Normal weight" ? Colors.green : Colors.red,
+                      color: _category == "Normal weight"
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   ),
                 ],
