@@ -1,44 +1,46 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const BMICalculatorApp());
+  runApp(const MyApp());
 }
 
-class BMICalculatorApp extends StatelessWidget {
-  const BMICalculatorApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'BMI Calculator',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const BMICalculatorPage(),
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+      ),
+      home: const BMIScreen(),
     );
   }
 }
 
-class BMICalculatorPage extends StatefulWidget {
-  const BMICalculatorPage({super.key});
+class BMIScreen extends StatefulWidget {
+  const BMIScreen({super.key});
 
   @override
-  State<BMICalculatorPage> createState() => _BMICalculatorPageState();
+  State<BMIScreen> createState() => _BMIScreenState();
 }
 
-class _BMICalculatorPageState extends State<BMICalculatorPage> {
-  final _heightController = TextEditingController();
-  final _weightController = TextEditingController();
+class _BMIScreenState extends State<BMIScreen> {
+  final TextEditingController _heightCtrl = TextEditingController();
+  final TextEditingController _weightCtrl = TextEditingController();
+
   double? _bmi;
   String _category = "";
 
   void _calculateBMI() {
-    final double? height = double.tryParse(_heightController.text);
-    final double? weight = double.tryParse(_weightController.text);
+    final double? height = double.tryParse(_heightCtrl.text);
+    final double? weight = double.tryParse(_weightCtrl.text);
 
-    if (height == null || weight == null || height <= 0 || weight <= 0) {
-      setState(() {
-        _bmi = null;
-        _category = "Invalid input!";
-      });
+    if (height == null || weight == null || height <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter valid height and weight")),
+      );
       return;
     }
 
@@ -46,12 +48,12 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     String category;
     if (bmi < 18.5) {
       category = "Underweight";
-    } else if (bmi < 24.9) {
-      category = "Normal weight";
-    } else if (bmi < 29.9) {
+    } else if (bmi < 25) {
+      category = "Normal";
+    } else if (bmi < 30) {
       category = "Overweight";
     } else {
-      category = "Obesity";
+      category = "Obese";
     }
 
     setState(() {
@@ -65,80 +67,54 @@ class _BMICalculatorPageState extends State<BMICalculatorPage> {
     return Scaffold(
       appBar: AppBar(title: const Text("BMI Calculator")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Image.asset('assets/images/ronaldo.png'),
-            const SizedBox(height: 16),
-            Container(
-              color: Colors.grey[200],
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Height (cm)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _heightController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              color: Colors.grey[200],
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Weight (kg)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _weightController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
+            TextField(
+              controller: _heightCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Enter height (cm)",
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
+            TextField(
+              controller: _weightCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Enter weight (kg)",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 30),
             ElevatedButton(
               onPressed: _calculateBMI,
-              child: const Text("Calculate BMI"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.indigo,
+              ),
+              child: const Text(
+                "CONTINUE",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             if (_bmi != null)
               Column(
                 children: [
                   Text(
                     "Your BMI: ${_bmi!.toStringAsFixed(1)}",
                     style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
+                        fontSize: 22, fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    _category,
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: _category == "Normal weight"
-                          ? Colors.green
-                          : Colors.red,
-                    ),
+                    "Category: $_category",
+                    style: const TextStyle(fontSize: 20, color: Colors.blueGrey),
                   ),
                 ],
-              )
+              ),
           ],
         ),
       ),
