@@ -185,40 +185,29 @@ class _BmiScreenState extends State<BmiScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+        // BMI label + value kept as widgets (no overlap)
+        Text('BMI', style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
+        Text(
+          bmi.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 4),
 
-                  // Gauge + BMI number
-                  SizedBox(
-                    height: 220,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CustomPaint(
-                          size: const Size(double.infinity, 200),
-                          painter: _BmiGaugePainter(value: bmi),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'BMI',
-                              style: TextStyle(
-                                  color: Colors.grey.shade700, fontSize: 14),
-                            ),
-                            Text(
-                              bmi.toStringAsFixed(1),
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w700,
-                                color: cs.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
+        // Gauge keeps fixed aspect ratio; internal padding keeps it away from edges
+        AspectRatio(
+          aspectRatio: 2.1, // wide semicircle
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+            child: CustomPaint(
+              painter: _BmiGaugePainter(value: bmi),
+              willChange: false,
+            ),
+          ),
+        ),
 
                   // Category / Difference row
                   Row(
@@ -429,119 +418,106 @@ class _BmiScreenState extends State<BmiScreen> {
 
 /// Simple semicircular gauge with colored ranges and a pointer for current BMI.
 /// Ranges: Underweight 16–18.5 (blue), Normal 18.5–25 (green), Overweight 25–40 (red).
+
 class _BmiGaugePainter extends CustomPainter {
   _BmiGaugePainter({required this.value});
-
   final double value;
 
   static const double min = 16.0;
   static const double max = 40.0;
 
-  // Convert BMI to angle (start at 180°, end at 0°)
-  double _angleFor(double v) {
-    final clamped = v.isNaN ? min : v.clamp(min, max);
-    final t = (clamped - min) / (max - min); // 0..1
-    return math.pi - (math.pi * t); // pi..0
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final center = Offset(w / 2, size.height * 0.95);
-    final radius = math.min(w * 0.8, size.height * 1.7) / 2;
+    final padding = 12.0;
+    final w = size.width - padding * 2;
+    final h = size.height - padding * 2;
+    final origin = Offset(padding, padding);
+
+    final radius = math.min(w, h * 1.35) / 2;
+    final center = Offset(origin.dx + w / 2, origin.dy + h);
 
     final base = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
-    // Draw colored arcs
-    void arc(double startDeg, double sweepDeg, Color color) {
-      final rect =
-          Rect.fromCircle(center: center, radius: radius);
-      final start = startDeg * (math.pi / 180);
-      final sweep = sweepDeg * (math.pi / 180);
-      final p = base..color = color;
-      canvas.drawArc(rect, start, sweep, false, p);
+    final arcRect = Rect.fromCircle(center: center, radius: radius);
+
+    double angleFor(double v) {
+      final t = ((v.clamp(min, max) - min) / (max - min));
+      return math.pi * (1.0 - t);
     }
 
-    // Map BMI breakpoints to degrees (180 -> 0)
-    double degFor(double v) => 180 - ((v - min) / (max - min)) * 180;
+    void drawSegment(double fromBmi, double toBmi, Color color) {
+      final start = angleFor(fromBmi);
+      final end = angleFor(toBmi);
+      final sweep = end - start;
+      canvas.drawArc(arcRect, start, sweep, false, base..color = color);
+    }
 
-    // Segments: [16..18.5] blue, [18.5..25] green, [25..40] red
-    arc(180, degFor(18.5) - 180, const Color(0xFF3A86FF)); // Underweight
-    arc(degFor(18.5), degFor(25.0) - degFor(18.5), const Color(0xFF80C980)); // Normal
-    arc(degFor(25.0), degFor(40.0) - degFor(25.0), const Color(0xFFFF9B9B)); // Overweight+
+    drawSegment(16.0, 18.5, const Color(0xFF3A86FF));   // Underweight
+    drawSegment(18.5, 25.0, const Color(0xFF80C980));   // Normal
+    drawSegment(25.0, 40.0, const Color(0xFFFF9B9B));   // Overweight+
 
-    // Tick labels (16, 18.5, 25, 40)
-    final textPainter = (String s) {
+    final tick = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = Colors.black45;
+    const tickLen = 10.0;
+
+    void drawTick(double bmi, String label) {
+      final a = angleFor(bmi);
+      final outer = Offset(center.dx + radius * math.cos(a),
+          center.dy + radius * math.sin(a));
+      final inner = Offset(center.dx + (radius - tickLen) * math.cos(a),
+          center.dy + (radius - tickLen) * math.sin(a));
+      canvas.drawLine(inner, outer, tick);
+
       final tp = TextPainter(
-        text: TextSpan(
-            text: s,
-            style:
-                const TextStyle(fontSize: 12, color: Colors.black54)),
+        text: TextSpan(style: const TextStyle(fontSize: 11, color: Colors.black54), text: label),
         textDirection: TextDirection.ltr,
       )..layout();
-      return tp;
-    };
-
-    void label(double v, String s, double rOff) {
-      final a = _angleFor(v);
-      final pos = Offset(
-        center.dx + (radius + rOff) * math.cos(a),
-        center.dy + (radius + rOff) * math.sin(a),
+      final textPos = Offset(
+        center.dx + (radius + 14) * math.cos(a) - tp.width / 2,
+        center.dy + (radius + 14) * math.sin(a) - tp.height / 2,
       );
-      final tp = textPainter(s);
-      canvas.save();
-      canvas.translate(pos.dx - tp.width / 2, pos.dy - tp.height / 2);
-      tp.paint(canvas, Offset.zero);
-      canvas.restore();
+      tp.paint(canvas, textPos);
     }
 
-    label(18.5, '18.5', 14);
-    label(25.0, '25.0', 14);
-    label(16.0, '16.0', 14);
-    label(40.0, '40.0', 14);
+    drawTick(16.0, '16.0');
+    drawTick(18.5, '18.5');
+    drawTick(25.0, '25.0');
+    drawTick(40.0, '40.0');
 
-    // Section titles “Underweight / Normal / Overweight”
-    void title(String s, double midVal) {
-      final a = _angleFor(midVal);
-      final r2 = radius - 28;
-      final pos = Offset(
-        center.dx + r2 * math.cos(a),
-        center.dy + r2 * math.sin(a),
-      );
+    void drawTitle(String s, double midBmi) {
+      final a = angleFor(midBmi);
+      final r2 = radius - 26;
       final tp = TextPainter(
-        text: TextSpan(
-            text: s,
-            style:
-                const TextStyle(fontSize: 14, color: Colors.black54)),
+        text: TextSpan(style: const TextStyle(fontSize: 13, color: Colors.black45), text: s),
         textDirection: TextDirection.ltr,
       )..layout();
-      canvas.save();
-      canvas.translate(pos.dx - tp.width / 2, pos.dy - tp.height / 2);
-      tp.paint(canvas, Offset.zero);
-      canvas.restore();
+      final pos = Offset(
+        center.dx + r2 * math.cos(a) - tp.width / 2,
+        center.dy + r2 * math.sin(a) - tp.height / 2,
+      );
+      tp.paint(canvas, pos);
     }
 
-    title('Underweight', (16 + 18.5) / 2);
-    title('Normal', (18.5 + 25.0) / 2);
-    title('Overweight', (25.0 + 40.0) / 2);
+    drawTitle('Underweight', (16.0 + 18.5) / 2);
+    drawTitle('Normal', (18.5 + 25.0) / 2);
+    drawTitle('Overweight', (25.0 + 40.0) / 2);
 
-    // Pointer
-    final angle = _angleFor(value == 0 ? 16 : value);
-    final pointerLen = 10.0;
-    final pointerCenter =
-        Offset(center.dx + radius * math.cos(angle), center.dy + radius * math.sin(angle));
+    final show = value.isNaN ? min : value.clamp(min, max).toDouble();
+    final a = angleFor(show);
+    final pointer = Offset(center.dx + radius * math.cos(a),
+        center.dy + radius * math.sin(a));
     final p = Paint()..color = const Color(0xFF2D6CDF);
-    canvas.drawCircle(pointerCenter, 10, p);
+    canvas.drawCircle(pointer, 9, p);
   }
 
   @override
-  bool shouldRepaint(covariant _BmiGaugePainter oldDelegate) =>
-      oldDelegate.value != value;
+  bool shouldRepaint(covariant _BmiGaugePainter old) => old.value != value;
 }
-
 class _UnitPicker extends StatelessWidget {
   const _UnitPicker(
       {required this.value, required this.items, required this.onChanged});
